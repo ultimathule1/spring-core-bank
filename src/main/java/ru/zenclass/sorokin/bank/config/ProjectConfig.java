@@ -9,8 +9,7 @@ import java.util.Scanner;
 
 @Configuration
 @ComponentScan(basePackages = {"ru.zenclass.sorokin.bank.services", "ru.zenclass.sorokin.bank.models",
-                                "ru.zenclass.sorokin.bank.controllers", "ru.zenclass.sorokin.bank.DAO",
-                                "ru.zenclass.sorokin.bank"})
+        "ru.zenclass.sorokin.bank"})
 @PropertySource("classpath:application.properties")
 public class ProjectConfig {
     @Bean

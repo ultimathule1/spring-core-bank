@@ -1,9 +1,6 @@
 package ru.zenclass.sorokin.bank.models;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 public class User {
     private final long id;
@@ -32,19 +29,6 @@ public class User {
 
     public List<Account> getAccounts() {
         return accounts;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return id == user.id && Objects.equals(login, user.login);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, login);
     }
 
     @Override

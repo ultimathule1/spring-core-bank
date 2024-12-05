@@ -1,20 +1,24 @@
 package ru.zenclass.sorokin.bank.operations.processors;
 
 import org.springframework.stereotype.Component;
-import ru.zenclass.sorokin.bank.controllers.BankFacadeController;
 import ru.zenclass.sorokin.bank.models.Account;
+import ru.zenclass.sorokin.bank.models.User;
 import ru.zenclass.sorokin.bank.operations.OperationProcessor;
 import ru.zenclass.sorokin.bank.operations.OperationType;
+import ru.zenclass.sorokin.bank.services.AccountService;
+import ru.zenclass.sorokin.bank.services.UserService;
 
 import java.util.Scanner;
 
 @Component
-public class AccountCreateProcess implements OperationProcessor {
-    private final BankFacadeController controller;
+public class AccountCreateProcessor implements OperationProcessor {
+    private final AccountService accountService;
+    private final UserService userService;
     private final Scanner scanner;
 
-    public AccountCreateProcess(BankFacadeController controller, Scanner scanner) {
-        this.controller = controller;
+    public AccountCreateProcessor(AccountService accountService, UserService userService, Scanner scanner) {
+        this.accountService = accountService;
+        this.userService = userService;
         this.scanner = scanner;
     }
 
@@ -24,13 +28,13 @@ public class AccountCreateProcess implements OperationProcessor {
         String userIdStr = scanner.nextLine();
         try {
             long userId = Long.parseLong(userIdStr);
-            Account account = controller.createAccount(userId);
+            User user = userService.findUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User with the id does not exist!"));
+            Account account = accountService.createAccount(user);
             System.out.printf("New account created with ID: %d, for user: %s\n",
-                    account.getId(), controller.findUserById(userId).getLogin());
+                    account.getId(), user.getLogin());
         } catch (NumberFormatException e) {
             System.err.println("Invalid user id!");
-        } catch (IllegalArgumentException e) {
-            System.err.println("User with the id does not exist!");
         }
     }
 

@@ -1,43 +1,50 @@
 package ru.zenclass.sorokin.bank.services;
 
 import org.springframework.stereotype.Service;
-import ru.zenclass.sorokin.bank.DAO.DAOUser;
-import ru.zenclass.sorokin.bank.models.Account;
 import ru.zenclass.sorokin.bank.models.User;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserService {
-    public final DAOUser daoUser;
+    private final Map<Long, User> users;
+    private final Set<String> takenLogins;
     private final AccountService accountService;
-    private static long idCounter = 0;
+    private long idCounter;
 
-    public UserService(DAOUser daoUser, AccountService accountService) {
-        this.daoUser = daoUser;
+
+    public UserService(AccountService accountService) {
         this.accountService = accountService;
+        idCounter = 0;
+        users = new HashMap<>();
+        takenLogins = new HashSet<>();
     }
 
     public User createUser(String login) {
         if (login == null || login.isEmpty())
             throw new IllegalArgumentException("Name cannot be null or empty");
-        if (daoUser.isLoginTaken(login))
+        if (takenLogins.contains(login))
             throw new IllegalArgumentException("Login is already taken");
 
         User user = new User(++idCounter, login, new ArrayList<>());
-        daoUser.saveUser(user);
+        takenLogins.add(user.getLogin());
+        users.put(user.getId(), user);
         accountService.createAccount(user);
 
         return user;
     }
 
     public Optional<User> findUserById(long id) {
-        return daoUser.findUserById(id);
+        return Optional.ofNullable(users.get(id));
     }
 
     public List<User> getAllUsers() {
-        return daoUser.getAllUsers();
+        return new ArrayList<>(users.values());
     }
 }

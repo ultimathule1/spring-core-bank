@@ -1,27 +1,27 @@
 package ru.zenclass.sorokin.bank.operations.processors;
 
 import org.springframework.stereotype.Component;
-import ru.zenclass.sorokin.bank.controllers.BankFacadeController;
 import ru.zenclass.sorokin.bank.operations.OperationProcessor;
 import ru.zenclass.sorokin.bank.operations.OperationType;
+import ru.zenclass.sorokin.bank.services.UserService;
 
 import java.util.Scanner;
 
 @Component
-public class CreateUserProcess implements OperationProcessor {
+public class CreateUserProcessor implements OperationProcessor {
     private final Scanner scanner;
-    private final BankFacadeController controller;
+    private final UserService userService;
 
-    public CreateUserProcess(Scanner scanner, BankFacadeController controller) {
+    public CreateUserProcessor(Scanner scanner, UserService userService) {
         this.scanner = scanner;
-        this.controller = controller;
+        this.userService = userService;
     }
 
     @Override
     public void processOperation() {
         System.out.println("Enter login for new user:");
         String login = scanner.nextLine();
-        var user = controller.createUser(login);
+        var user = userService.createUser(login);
         System.out.println("User created: " + user);
     }
 

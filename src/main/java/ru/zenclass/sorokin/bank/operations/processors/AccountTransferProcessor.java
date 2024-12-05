@@ -1,9 +1,9 @@
 package ru.zenclass.sorokin.bank.operations.processors;
 
 import org.springframework.stereotype.Component;
-import ru.zenclass.sorokin.bank.controllers.BankFacadeController;
 import ru.zenclass.sorokin.bank.operations.OperationProcessor;
 import ru.zenclass.sorokin.bank.operations.OperationType;
+import ru.zenclass.sorokin.bank.services.AccountService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -11,12 +11,12 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 
 @Component
-public class AccountTransferProcess implements OperationProcessor {
-    private final BankFacadeController controller;
+public class AccountTransferProcessor implements OperationProcessor {
+    private final AccountService accountService;
     private final Scanner scanner;
 
-    public AccountTransferProcess(BankFacadeController controller, Scanner scanner) {
-        this.controller = controller;
+    public AccountTransferProcessor(AccountService accountService, Scanner scanner) {
+        this.accountService = accountService;
         this.scanner = scanner;
     }
 
@@ -33,7 +33,7 @@ public class AccountTransferProcess implements OperationProcessor {
             BigDecimal amountMoney = scanner.nextBigDecimal();
             scanner.nextLine();
             amountMoney = amountMoney.setScale(2, RoundingMode.HALF_UP);
-            controller.transferMoney(sourceAccountId, targetAccountId, amountMoney);
+            accountService.transferMoney(sourceAccountId, targetAccountId, amountMoney);
             System.out.printf("Amount %.2f transferred from account ID %d to account ID: %d\n", amountMoney, sourceAccountId, targetAccountId);
         } catch (NumberFormatException | InputMismatchException e) {
             System.err.println("Invalid value!");
