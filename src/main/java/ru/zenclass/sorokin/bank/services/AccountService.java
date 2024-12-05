@@ -16,7 +16,8 @@ public class AccountService {
     private final Map<Long, Account> userAccounts;
     private final AccountProperties accountProperties;
     private long idCounter;
-    private final String ACCOUNT_NOT_FOUND = "Account not found";
+    private static final String ACCOUNT_NOT_FOUND = "Account not found";
+    private static final String AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO = "Amount can't be negative or zero";
 
     public AccountService(AccountProperties accountProperties) {
         this.accountProperties = accountProperties;
@@ -48,7 +49,7 @@ public class AccountService {
 
     public void depositAccount(long id, BigDecimal amountToDeposit) {
         if (amountToDeposit.compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("Amount cannot be negative or zero");
+            throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
         if (findAccountById(id).isEmpty())
             throw new IllegalArgumentException(ACCOUNT_NOT_FOUND);
 
@@ -63,7 +64,7 @@ public class AccountService {
         Account account = findAccountById(id)
                 .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
         if (amountToWithdraw.compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("Amount cannot be negative or zero");
+            throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
 
         if (account.getMoneyAmount().subtract(amountToWithdraw).compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("There are not enough funds for withdrawal." +
@@ -103,7 +104,7 @@ public class AccountService {
         Account toAccount = findAccountById(toId)
                 .orElseThrow(() -> new IllegalArgumentException("Target Account does not exist"));
         if (amountToTransfer.compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("Amount cannot be negative or zero");
+            throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
 
 
         BigDecimal totalAmountToTransfer = fromAccount.getUserId() == toAccount.getUserId() ?
