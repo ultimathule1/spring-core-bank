@@ -27,10 +27,7 @@ public class AccountCloseProcessor implements OperationProcessor {
         String accountIdStr = scanner.nextLine();
         try {
             long accountId = Long.parseLong(accountIdStr);
-            Account account = accountService.closeAccount(accountId);
-            userService.findUserById(account.getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException("User not found!"))
-                    .getAccounts().remove(account);
+            accountService.closeAccount(accountId);
             System.out.println("Account with ID " + accountId + " has been closed.");
         } catch (NumberFormatException e) {
             System.err.println("Invalid account ID!");

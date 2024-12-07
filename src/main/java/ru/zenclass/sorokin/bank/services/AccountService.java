@@ -1,63 +1,62 @@
 package ru.zenclass.sorokin.bank.services;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Service;
 import ru.zenclass.sorokin.bank.AccountProperties;
+import ru.zenclass.sorokin.bank.TransactionHelper;
 import ru.zenclass.sorokin.bank.models.Account;
 import ru.zenclass.sorokin.bank.models.User;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class AccountService {
-    private final Map<Long, Account> userAccounts;
     private final AccountProperties accountProperties;
-    private long idCounter;
+    private final TransactionHelper transactionHelper;
     private static final String ACCOUNT_NOT_FOUND = "Account not found";
     private static final String AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO = "Amount can't be negative or zero";
+    private final SessionFactory sessionFactory;
 
-    public AccountService(AccountProperties accountProperties) {
+    public AccountService(AccountProperties accountProperties,
+                          TransactionHelper transactionHelper,
+                          SessionFactory sessionFactory){
         this.accountProperties = accountProperties;
-        idCounter = 0;
-        userAccounts = new HashMap<>();
+        this.transactionHelper = transactionHelper;
+        this.sessionFactory = sessionFactory;
     }
 
     public Account createAccount(User user) {
         if (user == null)
             throw new IllegalArgumentException("User cannot be null");
-        Account account = new Account(++idCounter, user.getId(), accountProperties.getDefaultAmount());
-        user.getAccounts().add(account);
-        userAccounts.put(account.getId(), account);
-        return account;
+
+        return transactionHelper.executeInTransaction(() -> {
+            Account account = new Account(user, accountProperties.getDefaultAmount());
+            sessionFactory.getCurrentSession().persist(account);
+            return account;
+        });
     }
 
     public Optional<Account> findAccountById(long id) {
-        return Optional.ofNullable(userAccounts.get(id));
-    }
-
-    public List<Account> getAllUserAccounts(long userId) {
-        if (userId < 0)
-            throw new IllegalArgumentException("User id cannot be negative");
-
-        return userAccounts.values().stream()
-                .filter(a -> a.getUserId() == userId)
-                .toList();
+        return Optional.ofNullable(sessionFactory.getCurrentSession().get(Account.class, id));
     }
 
     public void depositAccount(long id, BigDecimal amountToDeposit) {
+        Account account = findAccountById(id)
+                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
         if (amountToDeposit.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
         if (findAccountById(id).isEmpty())
             throw new IllegalArgumentException(ACCOUNT_NOT_FOUND);
 
-        Account account = findAccountById(id)
-                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
-        account.setMoneyAmount(
-                account.getMoneyAmount().add(amountToDeposit)
-        );
+        transactionHelper.executeInTransaction(() -> {
+            Session session = sessionFactory.getCurrentSession();
+            Account accountMerged = session.merge(account);
+            accountMerged.setMoneyAmount(accountMerged.getMoneyAmount().add(amountToDeposit));
+            return 0;
+        });
     }
 
     public void withdrawAccount(long id, BigDecimal amountToWithdraw) {
@@ -71,52 +70,56 @@ public class AccountService {
                     " The Account cannot be negative.");
         }
 
-        account.setMoneyAmount(
-                account.getMoneyAmount().subtract(amountToWithdraw)
-        );
+        transactionHelper.executeInTransaction(() -> {
+            Session session = sessionFactory.getCurrentSession();
+            Account accountMerged = session.merge(account);
+            accountMerged.setMoneyAmount(accountMerged.getMoneyAmount().subtract(amountToWithdraw));
+            return 0;
+        });
     }
 
     public Account closeAccount(long id) {
-        Account accountToClose = findAccountById(id)
-                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
+        return transactionHelper.executeInTransaction(() -> {
+            Session session = sessionFactory.getCurrentSession();
+            Account accountToClose = findAccountById(id)
+                    .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
 
-        List<Account> accounts = getAllUserAccounts(accountToClose.getUserId());
-        if (accounts.size() == 1)
-            throw new IllegalStateException("You cannot close the account because there is only one account");
+            List<Account> accounts = accountToClose.getUser().getAccounts();
+            if (accounts.size() == 1)
+                throw new IllegalStateException("You cannot close the account because there is only one account");
 
-        Account firstAccountToDeposit = accounts.stream()
-                .filter(u -> u.getId() != accountToClose.getId())
-                .findFirst()
-                .orElseThrow();
+            Account firstAccountToDeposit = accounts.stream()
+                    .filter(u -> u.getId() != accountToClose.getId())
+                    .findFirst()
+                    .orElseThrow();
 
-        firstAccountToDeposit
-                .setMoneyAmount(accountToClose.getMoneyAmount()
-                        .add(firstAccountToDeposit.getMoneyAmount()));
-
-        userAccounts.remove(accountToClose.getId());
-
-        return accountToClose;
+            firstAccountToDeposit.setMoneyAmount(firstAccountToDeposit.getMoneyAmount().add(accountToClose.getMoneyAmount()));
+            session.remove(accountToClose);
+            return accountToClose;
+        });
     }
 
     public void transferMoney(long fromId, long toId, BigDecimal amountToTransfer) {
-        Account fromAccount = findAccountById(fromId)
-                .orElseThrow(() -> new IllegalArgumentException("Source Account does not exist"));
-        Account toAccount = findAccountById(toId)
-                .orElseThrow(() -> new IllegalArgumentException("Target Account does not exist"));
         if (amountToTransfer.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
 
+        transactionHelper.executeInTransaction(() -> {
+            Account fromAccount = findAccountById(fromId)
+                    .orElseThrow(() -> new IllegalArgumentException("Source Account does not exist"));
+            Account toAccount = findAccountById(toId)
+                    .orElseThrow(() -> new IllegalArgumentException("Target Account does not exist"));
+            BigDecimal totalAmountToTransfer = (fromAccount.getUser().getId()).equals(toAccount.getUser().getId()) ?
+                    amountToTransfer :
+                    amountToTransfer.add(amountToTransfer
+                            .multiply(new BigDecimal(String.valueOf(accountProperties.getTransferCommission()))));
 
-        BigDecimal totalAmountToTransfer = fromAccount.getUserId() == toAccount.getUserId() ?
-                amountToTransfer :
-                amountToTransfer.add(amountToTransfer
-                        .multiply(new BigDecimal(String.valueOf(accountProperties.getTransferCommission()))));
+            if (fromAccount.getMoneyAmount().subtract(totalAmountToTransfer).compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("source Account does not have enough money");
+            }
 
-        if (fromAccount.getMoneyAmount().subtract(totalAmountToTransfer).compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("source Account does not have enough money");
-        }
-
-        fromAccount.setMoneyAmount(fromAccount.getMoneyAmount().subtract(totalAmountToTransfer));
-        toAccount.setMoneyAmount(toAccount.getMoneyAmount().add(amountToTransfer));
+            fromAccount.setMoneyAmount(fromAccount.getMoneyAmount().subtract(totalAmountToTransfer));
+            toAccount.setMoneyAmount(toAccount.getMoneyAmount().add(amountToTransfer));
+            return 0;
+        });
     }
 }
