@@ -1,6 +1,5 @@
 package ru.zenclass.sorokin.bank.services;
 
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Service;
 import ru.zenclass.sorokin.bank.AccountProperties;

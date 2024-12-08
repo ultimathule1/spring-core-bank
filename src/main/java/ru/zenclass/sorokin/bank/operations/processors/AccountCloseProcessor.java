@@ -1,7 +1,6 @@
 package ru.zenclass.sorokin.bank.operations.processors;
 
 import org.springframework.stereotype.Component;
-import ru.zenclass.sorokin.bank.models.Account;
 import ru.zenclass.sorokin.bank.operations.OperationProcessor;
 import ru.zenclass.sorokin.bank.operations.OperationType;
 import ru.zenclass.sorokin.bank.services.AccountService;

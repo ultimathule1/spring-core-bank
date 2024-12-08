@@ -1,6 +1,5 @@
 package ru.zenclass.sorokin.bank.services;
 
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ public class UserService {
         this.sessionFactory = sessionFactory;
     }
 
-    //Не выходит в консоль, когда создаю юзера, хоть и аккаунт есть. Надо пофиксить
     public User createUser(String login) {
         if (login == null || login.isEmpty())
             throw new IllegalArgumentException("Name cannot be null or empty");
