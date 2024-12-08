@@ -4,19 +4,16 @@ import org.springframework.stereotype.Component;
 import ru.zenclass.sorokin.bank.operations.OperationProcessor;
 import ru.zenclass.sorokin.bank.operations.OperationType;
 import ru.zenclass.sorokin.bank.services.AccountService;
-import ru.zenclass.sorokin.bank.services.UserService;
 
 import java.util.Scanner;
 
 @Component
 public class AccountCloseProcessor implements OperationProcessor {
     private final AccountService accountService;
-    private final UserService userService;
     private final Scanner scanner;
 
-    public AccountCloseProcessor(AccountService accountService, UserService userService, Scanner scanner) {
+    public AccountCloseProcessor(AccountService accountService, Scanner scanner) {
         this.accountService = accountService;
-        this.userService = userService;
         this.scanner = scanner;
     }
 
