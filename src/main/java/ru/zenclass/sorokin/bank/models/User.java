@@ -23,7 +23,7 @@ public class User {
     private String login;
 
     //Возможно здесь нужен FetchType.EAGER-------------------------------------------
-    @OneToMany(mappedBy = "user", cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private List<Account> accounts;
 
     public User() {

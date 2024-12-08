@@ -16,30 +16,24 @@ public class TransactionHelper {
         this.sessionFactory = sessionFactory;
     }
 
-    public <T> T executeInTransaction(Supplier<T> action) {
-        Transaction transaction = null;
+    public<T> T executeInTransaction(Supplier<T> action) {
+        Session session = sessionFactory.getCurrentSession();
+        Transaction transaction = session.getTransaction();
+
+        if (transaction != null && transaction.isActive()) {
+            return action.get();
+        }
 
         try {
-            Session session = sessionFactory.getCurrentSession();
-            transaction = session.getTransaction();
-
-            if (!transaction.getStatus().equals(TransactionStatus.ACTIVE)) {
-                transaction.begin();
-            }
-
+            transaction = session.beginTransaction();
             T returnValue = action.get();
-
-            if (transaction.getStatus().equals(TransactionStatus.ACTIVE)) {
-                transaction.commit();
-            }
-
+            transaction.commit();
             return returnValue;
         } catch (Exception e) {
-            if (transaction != null && transaction.getStatus().equals(TransactionStatus.ACTIVE)) {
-                transaction.rollback();
-            }
-            System.out.println("AMA HEREEEEEEEEEEEEEE");
+            transaction.rollback();
             throw e;
+        } finally {
+            session.close();
         }
     }
 }

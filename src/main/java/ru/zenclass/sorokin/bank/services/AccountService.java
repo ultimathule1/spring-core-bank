@@ -40,47 +40,44 @@ public class AccountService {
     }
 
     public Optional<Account> findAccountById(long id) {
-        return Optional.ofNullable(sessionFactory.getCurrentSession().get(Account.class, id));
+        return Optional.ofNullable(
+                transactionHelper.executeInTransaction(() -> {
+                    return sessionFactory.getCurrentSession().get(Account.class, id);
+                })
+        );
     }
 
     public void depositAccount(long id, BigDecimal amountToDeposit) {
-        Account account = findAccountById(id)
-                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
         if (amountToDeposit.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
-        if (findAccountById(id).isEmpty())
-            throw new IllegalArgumentException(ACCOUNT_NOT_FOUND);
 
         transactionHelper.executeInTransaction(() -> {
-            Session session = sessionFactory.getCurrentSession();
-            Account accountMerged = session.merge(account);
-            accountMerged.setMoneyAmount(accountMerged.getMoneyAmount().add(amountToDeposit));
+            Account account = findAccountById(id)
+                    .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
+            account.setMoneyAmount(account.getMoneyAmount().add(amountToDeposit));
             return 0;
         });
     }
 
     public void withdrawAccount(long id, BigDecimal amountToWithdraw) {
-        Account account = findAccountById(id)
-                .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
         if (amountToWithdraw.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
 
-        if (account.getMoneyAmount().subtract(amountToWithdraw).compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("There are not enough funds for withdrawal." +
-                    " The Account cannot be negative.");
-        }
-
         transactionHelper.executeInTransaction(() -> {
-            Session session = sessionFactory.getCurrentSession();
-            Account accountMerged = session.merge(account);
-            accountMerged.setMoneyAmount(accountMerged.getMoneyAmount().subtract(amountToWithdraw));
+            Account account = findAccountById(id)
+                    .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
+
+            if (account.getMoneyAmount().subtract(amountToWithdraw).compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("There are not enough funds for withdrawal." +
+                        " The Account cannot be negative.");
+            }
+            account.setMoneyAmount(account.getMoneyAmount().subtract(amountToWithdraw));
             return 0;
         });
     }
 
     public Account closeAccount(long id) {
         return transactionHelper.executeInTransaction(() -> {
-            Session session = sessionFactory.getCurrentSession();
             Account accountToClose = findAccountById(id)
                     .orElseThrow(() -> new IllegalArgumentException(ACCOUNT_NOT_FOUND));
 
@@ -94,7 +91,7 @@ public class AccountService {
                     .orElseThrow();
 
             firstAccountToDeposit.setMoneyAmount(firstAccountToDeposit.getMoneyAmount().add(accountToClose.getMoneyAmount()));
-            session.remove(accountToClose);
+            sessionFactory.getCurrentSession().remove(accountToClose);
             return accountToClose;
         });
     }
@@ -108,6 +105,7 @@ public class AccountService {
                     .orElseThrow(() -> new IllegalArgumentException("Source Account does not exist"));
             Account toAccount = findAccountById(toId)
                     .orElseThrow(() -> new IllegalArgumentException("Target Account does not exist"));
+
             BigDecimal totalAmountToTransfer = (fromAccount.getUser().getId()).equals(toAccount.getUser().getId()) ?
                     amountToTransfer :
                     amountToTransfer.add(amountToTransfer

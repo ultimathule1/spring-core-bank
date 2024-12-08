@@ -34,7 +34,7 @@ public class AccountCloseProcessor implements OperationProcessor {
         } catch (IllegalArgumentException e) {
             System.err.println("Account with the id does not exist!");
         } catch (IllegalStateException e) {
-            System.err.println("The account cannot be closed since it is the only one the user has");
+            System.err.println(e.getMessage());
         }
     }
 

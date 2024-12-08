@@ -1,5 +1,6 @@
 package ru.zenclass.sorokin.bank.services;
 
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,10 @@ public class UserService {
     }
 
     public Optional<User> findUserById(long id) {
-        return Optional.ofNullable(sessionFactory.getCurrentSession().get(User.class, id));
+        return Optional.ofNullable(transactionHelper.executeInTransaction( () -> {
+                return sessionFactory.getCurrentSession().get(User.class, id);
+            })
+        );
     }
 
     public List<User> getAllUsers() {
