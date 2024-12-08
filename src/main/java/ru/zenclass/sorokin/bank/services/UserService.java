@@ -48,9 +48,9 @@ public class UserService {
     }
 
     public Optional<User> findUserById(long id) {
-        return Optional.ofNullable(transactionHelper.executeInTransaction( () -> {
-                return sessionFactory.getCurrentSession().get(User.class, id);
-            })
+        return Optional.ofNullable(transactionHelper.executeInTransaction(() -> {
+                    return sessionFactory.getCurrentSession().get(User.class, id);
+                })
         );
     }
 

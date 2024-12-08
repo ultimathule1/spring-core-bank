@@ -22,7 +22,7 @@ public class AccountService {
 
     public AccountService(AccountProperties accountProperties,
                           TransactionHelper transactionHelper,
-                          SessionFactory sessionFactory){
+                          SessionFactory sessionFactory) {
         this.accountProperties = accountProperties;
         this.transactionHelper = transactionHelper;
         this.sessionFactory = sessionFactory;
