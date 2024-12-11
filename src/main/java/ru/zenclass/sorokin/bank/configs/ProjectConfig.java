@@ -1,4 +1,4 @@
-package ru.zenclass.sorokin.bank.config;
+package ru.zenclass.sorokin.bank.configs;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
