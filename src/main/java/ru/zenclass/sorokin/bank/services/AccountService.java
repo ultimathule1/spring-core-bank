@@ -38,14 +38,6 @@ public class AccountService {
         });
     }
 
-    public Optional<Account> findAccountById(long id) {
-        return Optional.ofNullable(
-                transactionHelper.executeInTransaction(() -> {
-                    return sessionFactory.getCurrentSession().get(Account.class, id);
-                })
-        );
-    }
-
     public void depositAccount(long id, BigDecimal amountToDeposit) {
         if (amountToDeposit.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException(AMOUNT_CANNOT_BE_NEGATIVE_OR_ZERO);
@@ -118,5 +110,13 @@ public class AccountService {
             toAccount.setMoneyAmount(toAccount.getMoneyAmount().add(amountToTransfer));
             return 0;
         });
+    }
+
+    private Optional<Account> findAccountById(long id) {
+        return Optional.ofNullable(
+                transactionHelper.executeInTransaction(() -> {
+                    return sessionFactory.getCurrentSession().get(Account.class, id);
+                })
+        );
     }
 }
